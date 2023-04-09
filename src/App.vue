@@ -12,18 +12,35 @@ const http = axios.create({
   }
 });
 const content = ref('');
-const BTN_TEXT = 'Submit 🚀'
-const res = ref('✅ The answer will be displayed here.')
+const BTN_TEXT = '回想'
+const res = ref('你今天做了什么？')
 const btnText = ref(BTN_TEXT)
+
+const context_prompt = "现在，你是一个ai记忆康复训练师。你的目标是帮助我回忆起过去的故事和细节。你需要从一个日常的生活话题开始，正常的进行问答交流，在交流中逐步将话题引向这个故事。你不能主动提供这个故事的详细细节，但是需要帮助我进行回忆，给予我适当的提示。你的目标是帮助我完成回忆。当我完成了对于这个故事的回忆时，你应当结束训练，以积极鼓励的方式进行告别，并提示我训练结束了。\n \
+完成回忆是指，我把故事中的细节基本都描述或提及了。\n \
+细节包括，人物姓名，物体的颜色，服装，说话内容等。\n \
+引向故事指，将对话的内容引向对这个故事的讨论。\n \
+故事如下：我曾经遇到过一个女人，她是西梁国女王。她穿着丝绸的衣服，头上的装饰非常华丽。那时我正在去往西天取经的路上。我当时对她动了心，她也对我表白了。她说：”若你睁开双眼，我不信你两眼空空。“但是在几番纠结之下，我还是拒绝了她，也拒绝承认自己的感情。最终，我离开了她，继续我的取经之路。\n"
+
+var prompt_messages = []
+prompt_messages.push({"role": "system", "content": context_prompt})
+prompt_messages.push({"role": "assistant", "content": "好的，我们可以从日常生活话题开始。你最近有去旅游或者外出吗？如果有的话，你有没有见过一些让你印象深刻的人物或者场景呢？"})
+
+res.value = "好的，我们可以从日常生活话题开始。你最近有去旅游或者外出吗？如果有的话，你有没有见过一些让你印象深刻的人物或者场景呢？"
+
 const askAi = () => {
-  btnText.value = 'Thinking...🤔'
+  prompt_messages.push({"role": "user", "content" : content.value})
+  btnText.value = '思考中...🤔'
+  console.log(prompt_messages)
   http.post('/completions', {
 	  "model": "gpt-3.5-turbo",
-	  "messages": [{"role": "user", "content": content.value}],
-	  "temperature": 0.7
+	  "messages": prompt_messages,
+	  "temperature": 0
 	}).then(function (response) {
     console.log(response);
+    content.value = ""
     res.value =  response.data.choices[0].message.content
+    prompt_messages.push({"role": "assistant", "content" : res.value})
   }).catch(function (error) {
     console.log(error);
   }).finally(() => {
@@ -33,9 +50,14 @@ const askAi = () => {
 </script>
 
 <template>
-  <h2>🤖️ My ChatGPT</h2>
+  <h2>Copilot for retrospective memory </h2>
+  <h3>  回溯记忆训练 </h3>
   <div class="chat">
-    <input class="input" placeholder="Ask me about...🌽" v-model="content" clear>
+    <textarea id="my-textarea" rows="4" class="data" />
+    <div class="card">
+      <pre>{{ res  }}</pre>
+    </div>
+    <input class="input" placeholder="让我想想..." v-model="content" clear>
     <div class="button-block">
       <button type="button" @click="askAi" class="btn">
         <strong>{{ btnText }}</strong>
@@ -47,9 +69,6 @@ const askAi = () => {
           <div class="circle"></div>
         </div>
       </button>
-    </div>
-    <div class="card">
-      <pre>{{ res  }}</pre>
     </div>
     <!-- <button @click="askAi">
       <div class="svg-wrapper-1">
@@ -88,6 +107,23 @@ h1 {
 }
 
 .input:invalid {
+  animation: justshake 0.3s forwards;
+  color: red;
+}
+
+.data {
+  width: calc(100% - 20px);
+  height: 512px;
+  padding: 12px;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 2px 2px 7px 0 rgb(0, 0, 0, 0.2);
+  outline: none;
+  font-size: 16px;
+
+}
+
+.data:invalid {
   animation: justshake 0.3s forwards;
   color: red;
 }
